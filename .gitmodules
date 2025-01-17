@@ -1,0 +1,9 @@
+[submodule "rapidjson"]
+	path = rapidjson
+	url = https://github.com/Tencent/rapidjson.git
+[submodule "faiss"]
+	path = faiss_xx
+	url = https://github.com/facebookresearch/faiss.git
+[submodule "spdlog"]
+	path = spdlog
+	url = https://github.com/gabime/spdlog.git

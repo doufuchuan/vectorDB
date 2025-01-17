@@ -1,0 +1,5 @@
+third_party/faiss
+third_party/rapidjson
+third_party/spdlog
+third_party/lib
+*.o
