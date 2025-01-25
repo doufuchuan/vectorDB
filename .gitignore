@@ -4,4 +4,3 @@ third_party/spdlog
 third_party/lib
 third_party/hnswlib
 *.o
-vdb_server
