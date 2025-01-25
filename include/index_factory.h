@@ -7,6 +7,7 @@ class IndexFactory {
 public:
     enum class IndexType {
         FLAT,
+        HNSW,
         UNKNOWN = -1 
     };
 
@@ -15,7 +16,8 @@ public:
         IP
     };
 
-    void init(IndexType type, int dim, MetricType metric = MetricType::L2);
+    //void init(IndexType type, int dim, MetricType metric = MetricType::L2);
+    void init(IndexFactory::IndexType type, int dim, int num_data = 0, IndexFactory::MetricType metric = IndexFactory::MetricType::L2);
     void* getIndex(IndexType type) const;
 
 private:

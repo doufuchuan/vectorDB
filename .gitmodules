@@ -7,3 +7,9 @@
 [submodule "spdlog"]
 	path = spdlog
 	url = https://github.com/gabime/spdlog.git
+[submodule "third_party/hnswlib"]
+	path = third_party/hnswlib
+	url = https://github.com/nmslib/hnswlib
+[submodule "hnswlib"]
+	path = hnswlib
+	url = https://github.com/nmslib/hnswlib

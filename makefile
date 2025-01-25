@@ -11,7 +11,7 @@ LIBS = -L
 # 链接选项
 LDFLAGS = ./third_party/lib/libfaiss.a -fopenmp -lopenblas -lpthread ./third_party/lib/libspdlog.a
 
-INCLUDES = -I $(PWD)/include -I ./third_party/faiss -I ./third_party/rapidjson/include -I ./third_party/spdlog/include -I /usr/local/include
+INCLUDES = -I $(PWD)/include -I ./third_party/faiss -I ./third_party/rapidjson/include -I ./third_party/spdlog/include -I /usr/local/include -I ./third_party/hnswlib
 
 # 目标文件
 TARGET = vdb_server

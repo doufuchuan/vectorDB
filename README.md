@@ -14,11 +14,51 @@ vector database
 main函数，服务的初始化和启动入口
 
 -- 依赖 --
+
 faiss
 spdlog
 rapidjson
 
 编译得到libxxx.a文件
 
+# 运行
+
+```
+./vdb_server
+```
+
+插入
+```
+curl -X POST -H "Content-Type: application/json" -d '{"vectors": [0.8], "id": 2, "indexType": "FLAT"}' http://localhost:8080/insert
+```
+
+查询
+```
+curl -X POST -H "Content-Type: application/json" -d '{"vectors": [0.8], "k": 2, "indexType": "FLAT"}' http://localhost:8080/search
+```
+返回结果：
+```
+{"vectors":[2],"distances":[0.09000000357627869],"retCode":0}
+```
+
+# v0.0.2
+实现HNSW索引封装
+
+依赖：hnswlib
+
+插入
+```
+curl -X POST -H "Content-Type: application/json" -d '{"vectors": [0.2], "id": 3, "indexType": "HNSW"}' http://localhost:8080/insert
+```
+
+查询
+```
+curl -X POST -H "Content-Type: application/json" -d '{"vectors": [0.5], "k": 2, "indexType": "HNSW"}' http://localhost:8080/search
+```
+
+返回结果
+```
+{"vectors":[3],"distances":[0.09000000357627869],"retCode":0}
+```
 # References
 《从零构建向量数据库》
