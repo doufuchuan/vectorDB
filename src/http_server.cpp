@@ -12,7 +12,8 @@
 /**
  * HttpServer类的构造函数，用于初始化HTTP服务器
  */
-HttpServer::HttpServer(const std::string& host, int port) : host(host), port(port) {
+HttpServer::HttpServer(const std::string& host, int port, VectorDatabase* vector_database)
+    : host(host), port(port), vector_database_(vector_database) {
     server.Post("/search", [this](const httplib::Request& req, httplib::Response& res) {
         searchHandler(req, res);
     });
@@ -20,6 +21,15 @@ HttpServer::HttpServer(const std::string& host, int port) : host(host), port(por
     server.Post("/insert", [this](const httplib::Request& req, httplib::Response& res) {
         insertHandler(req, res);
     });
+
+    server.Post("/upsert", [this](const httplib::Request& req, httplib::Response& res) { // 注册upsert接口
+        upsertHandler(req, res);
+    });
+
+    server.Post("/query", [this](const httplib::Request& req, httplib::Response& res) { // 注册query接口
+        queryHandler(req, res);
+    });
+
 }
 
 void HttpServer::start() {
@@ -33,6 +43,10 @@ bool HttpServer::isRequestValid(const rapidjson::Document& json_request, CheckTy
                    json_request.HasMember(REQUEST_K) &&
                    (!json_request.HasMember(REQUEST_INDEX_TYPE) || json_request[REQUEST_INDEX_TYPE].IsString());
         case CheckType::INSERT:
+            return json_request.HasMember(REQUEST_VECTORS) &&
+                   json_request.HasMember(REQUEST_ID) &&
+                   (!json_request.HasMember(REQUEST_INDEX_TYPE) || json_request[REQUEST_INDEX_TYPE].IsString());
+        case CheckType::UPSERT: // 添加UPSERT逻辑
             return json_request.HasMember(REQUEST_VECTORS) &&
                    json_request.HasMember(REQUEST_ID) &&
                    (!json_request.HasMember(REQUEST_INDEX_TYPE) || json_request[REQUEST_INDEX_TYPE].IsString());
@@ -223,6 +237,84 @@ void HttpServer::insertHandler(const httplib::Request& req, httplib::Response& r
     json_response.AddMember(RESPONSE_RETCODE, RESPONSE_RETCODE_SUCCESS, allocator);
 
     setJsonResponse(json_response, res);
+}
+
+void HttpServer::upsertHandler(const httplib::Request& req, httplib::Response& res) {
+    GlobalLogger->debug("Received upsert request");
+
+    // 解析JSON请求
+    rapidjson::Document json_request;
+    json_request.Parse(req.body.c_str());
+
+    // 检查JSON文档是否为有效对象
+    if (!json_request.IsObject()) {
+        GlobalLogger->error("Invalid JSON request");
+        res.status = 400;
+        setErrorJsonResponse(res, RESPONSE_RETCODE_ERROR, "Invalid JSON request");
+        return;
+    }
+
+    // 检查请求的合法性
+    if (!isRequestValid(json_request, CheckType::UPSERT)) {
+        GlobalLogger->error("Missing vectors or id parameter in the request");
+        res.status = 400;
+        setErrorJsonResponse(res, RESPONSE_RETCODE_ERROR, "Missing vectors or id parameter in the request");
+        return;
+    }
+
+    uint64_t label = json_request[REQUEST_ID].GetUint64();
+
+    // 获取请求参数中的索引类型
+    IndexFactory::IndexType indexType = getIndexTypeFromRequest(json_request);
+    vector_database_->upsert(label, json_request, indexType);
+
+    rapidjson::Document json_response;
+    json_response.SetObject();
+    rapidjson::Document::AllocatorType& response_allocator = json_response.GetAllocator();
+
+    // 添加retCode到响应
+    json_response.AddMember(RESPONSE_RETCODE, RESPONSE_RETCODE_SUCCESS, response_allocator);
+
+    setJsonResponse(json_response, res);
+}
+
+void HttpServer::queryHandler(const httplib::Request& req, httplib::Response& res) {
+    GlobalLogger->debug("Received query request");
+
+    // 解析JSON请求
+    rapidjson::Document json_request;
+    json_request.Parse(req.body.c_str());
+
+    // 检查JSON文档是否为有效对象
+    if (!json_request.IsObject()) {
+        GlobalLogger->error("Invalid JSON request");
+        res.status = 400;
+        setErrorJsonResponse(res, RESPONSE_RETCODE_ERROR, "Invalid JSON request");
+        return;
+    }
+
+    // 从JSON请求中获取ID
+    uint64_t id = json_request[REQUEST_ID].GetUint64(); // 使用宏REQUEST_ID
+
+    // 查询JSON数据
+    rapidjson::Document json_data = vector_database_->query(id);
+
+    // 将结果转换为JSON
+    rapidjson::Document json_response;
+    json_response.SetObject();
+    rapidjson::Document::AllocatorType& allocator = json_response.GetAllocator();
+
+    // 如果查询到向量，则将json_data对象的内容合并到json_response对象中
+    if (!json_data.IsNull()) {
+        for (auto it = json_data.MemberBegin(); it != json_data.MemberEnd(); ++it) {
+            json_response.AddMember(it->name, it->value, allocator);
+        }
+    }
+
+    // 设置响应
+    json_response.AddMember(RESPONSE_RETCODE, RESPONSE_RETCODE_SUCCESS, allocator);
+    setJsonResponse(json_response, res);
+
 }
 
 void HttpServer::setJsonResponse(const rapidjson::Document& json_response, httplib::Response& res) {

@@ -60,5 +60,22 @@ curl -X POST -H "Content-Type: application/json" -d '{"vectors": [0.5], "k": 2, 
 ```
 {"vectors":[3],"distances":[0.09000000357627869],"retCode":0}
 ```
+
+# v0.1
+混合索引
+- 基于RocksDB实现标量数据索引
+    - `ScalarStorage`类
+- `VectorDataBase`统一管理入口，组合向量数据和标量数据操作
+- 扩展`upsert`、`query`接口
+
+```
+curl -X POST -H "Content-Type: application/json" -d '{"vectors": [0.2], "id": 3, "indexType": "FLAT", "Name": "hello", "Ci":1111}' http://localhost:8080/upsert
+```
+
+```
+curl -X POST -H "Content-Type: application" -d {"id": 3}' http://localhost:8080/query
+```
+
+
 # References
 《从零构建向量数据库》

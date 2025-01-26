@@ -3,4 +3,7 @@ third_party/rapidjson
 third_party/spdlog
 third_party/lib
 third_party/hnswlib
+third_party/rocksdb
+third_party/snappy
+ScalarStorage
 *.o

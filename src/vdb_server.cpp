@@ -1,5 +1,6 @@
 #include "http_server.h"
 #include "index_factory.h"
+#include "vector_database.h"
 #include "logger.h"
 
 int main() {
@@ -17,8 +18,13 @@ int main() {
     globalIndexFactory->init(IndexFactory::IndexType::HNSW, dim, num_data);
     GlobalLogger->info("Global IndexFactory initialized");
 
+    // 初始化VectorDatabase对象
+    std::string db_path = "ScalarStorage"; // RocksDB路径
+    VectorDatabase vector_database(db_path);
+    GlobalLogger->info("VectorDatabase initialized");
+
     // 创建并启动HTTP服务器
-    HttpServer server("localhost", 8080);
+    HttpServer server("localhost", 8080, &vector_database);
     GlobalLogger->info("HttpServer created");
     server.start();
 
