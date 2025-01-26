@@ -2,7 +2,7 @@
 	path = rapidjson
 	url = https://github.com/Tencent/rapidjson.git
 [submodule "faiss"]
-	path = faiss_xx
+	path = faiss
 	url = https://github.com/facebookresearch/faiss.git
 [submodule "spdlog"]
 	path = spdlog
@@ -13,3 +13,9 @@
 [submodule "hnswlib"]
 	path = hnswlib
 	url = https://github.com/nmslib/hnswlib
+[submodule "third_party/rocksdb"]
+	path = third_party/rocksdb
+	url = https://github.com/facebook/rocksdb.git
+[submodule "third_party/snappy"]
+	path = third_party/snappy
+	url = https://github.com/google/snappy
