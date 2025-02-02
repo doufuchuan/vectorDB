@@ -2,6 +2,7 @@
 
 #include <vector>
 #include "hnswlib/hnswlib.h"
+#include "roaring/roaring.h" 
 #include "index_factory.h"
 
 class HNSWLibIndex {
@@ -12,11 +13,21 @@ public:
     // 插入向量
     void insert_vectors(const std::vector<float>& data, uint64_t label);
 
-    // 查询向量
-    std::pair<std::vector<long>, std::vector<float>> search_vectors(const std::vector<float>& query, int k, int ef_search = 50);
+    // 查询向量, 引入filter bitmap
+    std::pair<std::vector<long>, std::vector<float>> search_vectors(const std::vector<float>& query, int k, const roaring_bitmap_t* bitmap = nullptr, int ef_search = 50);
+    class RoaringBitmapIDFilter : public hnswlib::BaseFilterFunctor {
+    public:
+        RoaringBitmapIDFilter(const roaring_bitmap_t* bitmap) : bitmap_(bitmap) {}
 
+        bool operator()(hnswlib::labeltype label) {
+            return roaring_bitmap_contains(bitmap_, static_cast<uint32_t>(label));
+        }
+
+    private:
+        const roaring_bitmap_t* bitmap_;
+    };
 private:
-    int dim;
-    hnswlib::SpaceInterface<float>* space;
+    // int dim;
+    // hnswlib::SpaceInterface<float>* space;
     hnswlib::HierarchicalNSW<float>* index;
 };

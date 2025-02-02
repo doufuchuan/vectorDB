@@ -76,6 +76,20 @@ curl -X POST -H "Content-Type: application/json" -d '{"vectors": [0.2], "id": 3,
 curl -X POST -H "Content-Type: application" -d {"id": 3}' http://localhost:8080/query
 ```
 
+# v0.1.1
+过滤索引
+
+```
+curl -X POST -H "Content-Type: application/json" -d '{"id": 6, "vectors": [0.9], "int_field":47, "indexType": "FLAT"}' http://localhost:8080/upsert
+```
+
+```
+curl -X POST -H "Content-Type: application/json" -d '{"vectors": [0.9], "k": 5, "indexType": "FLAT", "filter":{"fieldName":"int_field", "value":47, "op":"="}}' http://localhost:8080/search
+```
+
+```
+curl -X POST -H "Content-Type: application/json" -d '{"vectors": [0.9], "k": 5, "indexType": "FLAT", "filter":{"fieldName":"int_field", "value":47, "op":"!="}}' http://localhost:8080/search
+```
 
 # References
 《从零构建向量数据库》

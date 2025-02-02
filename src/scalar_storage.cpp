@@ -8,9 +8,18 @@
 
 ScalarStorage::ScalarStorage(const std::string& db_path) {
     rocksdb::Options options;
-    options.create_if_missing = true;
-    rocksdb::Status status = rocksdb::DB::Open(options, db_path, &db_);
+    
+    // 删除旧的数据库文件
+    rocksdb::Status status = rocksdb::DestroyDB(db_path, options);
     if (!status.ok()) {
+        GlobalLogger->error("Error destroying the database:  {}", status.ToString());
+        throw std::runtime_error("Failed to open RocksDB: " + status.ToString());
+    }
+
+    options.create_if_missing = true;
+    status = rocksdb::DB::Open(options, db_path, &db_);
+    if (!status.ok()) {
+        GlobalLogger->error("Failed to open RocksDB: {}", status.ToString());
         throw std::runtime_error("Failed to open RocksDB: " + status.ToString());
     }
 }

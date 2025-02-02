@@ -19,3 +19,6 @@
 [submodule "third_party/snappy"]
 	path = third_party/snappy
 	url = https://github.com/google/snappy
+[submodule "third_party/roaring"]
+	path = third_party/roaring
+	url = https://github.com/RoaringBitmap/CRoaring.git

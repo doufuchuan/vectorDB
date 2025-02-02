@@ -2,8 +2,13 @@
 #include "logger.h"
 #include "constants.h" 
 #include <faiss/IndexIDMap.h>
+#include <faiss/IndexFlat.h>
 #include <iostream>
 #include <vector>
+
+bool RoaringBitmapIDSelector::is_member(int64_t id) const {
+    return roaring_bitmap_contains(bitmap_, static_cast<uint32_t>(id));
+}
 
 FaissIndex::FaissIndex(faiss::Index* index) : index(index) {}
 
@@ -34,15 +39,20 @@ void FaissIndex::remove_vectors(const std::vector<long>& ids) { // 添加remove_
  * @param query 待查询向量
  * @param k 需要查询的最邻近向量个数
  */
-std::pair<std::vector<long>, std::vector<float>> FaissIndex::search_vectors(const std::vector<float>& query, int k) {
-    int dim = index->d; //获取索引中向量的维度
-    int num_queries = query.size() / dim; //查询向量的数量
-    //存储查询结果的动态数组
+std::pair<std::vector<long>, std::vector<float>> FaissIndex::search_vectors(const std::vector<float>& query, int k, const roaring_bitmap_t* bitmap) {
+    int dim = index->d;
+    int num_queries = query.size() / dim;
     std::vector<long> indices(num_queries * k);
-    //存储查询结果距离的动态数组
     std::vector<float> distances(num_queries * k);
 
-    index->search(num_queries, query.data(), k, distances.data(), indices.data());
+    // 如果传入了 bitmap 参数，则使用 RoaringBitmapIDSelector 初始化 faiss::SearchParameters 对象
+    faiss::SearchParameters search_params;
+    RoaringBitmapIDSelector selector(bitmap);
+    if (bitmap != nullptr) {
+        search_params.sel = &selector;
+    }
+
+    index->search(num_queries, query.data(), k, distances.data(), indices.data(), &search_params); // 将 search_params 传入 search 方法
 
     GlobalLogger->debug("Retrieved values:");
     for (size_t i = 0; i < indices.size(); ++i) {

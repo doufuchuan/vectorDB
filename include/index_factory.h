@@ -8,6 +8,7 @@ public:
     enum class IndexType {
         FLAT,
         HNSW,
+        FILTER, // 添加 FILTER 枚举值
         UNKNOWN = -1 
     };
 
@@ -17,7 +18,7 @@ public:
     };
 
     //void init(IndexType type, int dim, MetricType metric = MetricType::L2);
-    void init(IndexFactory::IndexType type, int dim, int num_data = 0, IndexFactory::MetricType metric = IndexFactory::MetricType::L2);
+    void init(IndexFactory::IndexType type, int dim = 1, int num_data = 0, IndexFactory::MetricType metric = IndexFactory::MetricType::L2);
     void* getIndex(IndexType type) const;
 
 private:

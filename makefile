@@ -9,9 +9,9 @@ CXXFLAGS = -std=c++17 -g -Wall $(INCLUDES)
 LIBS = -L 
 
 # 链接选项
-LDFLAGS = ./third_party/lib/libfaiss.a -fopenmp -lopenblas -lpthread ./third_party/lib/libspdlog.a -lrocksdb
+LDFLAGS = ./third_party/lib/libfaiss.a -fopenmp -lopenblas -lpthread ./third_party/lib/libspdlog.a -lrocksdb -lroaring#./third_party/roaring/build/libcroaring-singleheader-source-lib.a
 
-INCLUDES = -I $(PWD)/include -I ./third_party/faiss -I ./third_party/rapidjson/include -I ./third_party/spdlog/include -I /usr/local/include -I ./third_party/hnswlib -I ./third_party/rocksdb/include
+INCLUDES = -I $(PWD)/include -I ./third_party/faiss -I ./third_party/rapidjson/include -I ./third_party/spdlog/include -I /usr/local/include -I ./third_party/hnswlib -I ./third_party/rocksdb/include -I ./third_party/roaring/include
 
 # 目标文件
 TARGET = vdb_server
