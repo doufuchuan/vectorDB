@@ -10,7 +10,60 @@
 #include <rapidjson/document.h>
 #include <rapidjson/stringbuffer.h> // 包含 rapidjson/stringbuffer.h 以使用 StringBuffer 类
 #include <rapidjson/writer.h> // 包含 rapidjson/writer.h 以使用 Writer 类
-VectorDatabase::VectorDatabase(const std::string& db_path) : scalar_storage_(db_path) {}
+VectorDatabase::VectorDatabase(const std::string& db_path, const std::string& wal_path) // 添加 wal_path 参数
+    : scalar_storage_(db_path) {
+    persistence_.init(wal_path); // 初始化 persistence_ 对象
+}
+
+void VectorDatabase::reloadDatabase() {
+    GlobalLogger->info("Entering VectorDatabase::reloadDatabase()"); // 在方法开始时打印日志
+    std::string operation_type;
+    rapidjson::Document json_data;
+    persistence_.readNextWALLog(&operation_type, &json_data); // 通过指针的方式调用 readNextWALLog
+
+    while (!operation_type.empty()) {
+        GlobalLogger->info("Operation Type: {}", operation_type);
+
+        // 打印读取的一行内容
+        rapidjson::StringBuffer buffer;
+        rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+        json_data.Accept(writer);
+        GlobalLogger->info("Read Line: {}", buffer.GetString());
+
+       if (operation_type == "upsert") {
+            uint64_t id = json_data[REQUEST_ID].GetUint64();
+            IndexFactory::IndexType index_type = getIndexTypeFromRequest(json_data);
+
+            upsert(id, json_data, index_type); // 调用 VectorDatabase::upsert 接口重建数据
+        }
+
+        // 清空 json_data
+        rapidjson::Document().Swap(json_data);
+
+        // 读取下一条 WAL 日志
+        operation_type.clear();
+        persistence_.readNextWALLog(&operation_type, &json_data);
+    }
+}
+
+void VectorDatabase::writeWALLog(const std::string& operation_type, const rapidjson::Document& json_data) {
+    std::string version = "1.0"; // 您可以根据需要设置版本
+    persistence_.writeWALLog(operation_type, json_data, version); // 将 version 传递给 writeWALLog 方法
+}
+
+IndexFactory::IndexType VectorDatabase::getIndexTypeFromRequest(const rapidjson::Document& json_request) {
+    // 获取请求参数中的索引类型
+    if (json_request.HasMember(REQUEST_INDEX_TYPE) && json_request[REQUEST_INDEX_TYPE].IsString()) {
+        std::string index_type_str = json_request[REQUEST_INDEX_TYPE].GetString();
+        if (index_type_str == INDEX_TYPE_FLAT) {
+            return IndexFactory::IndexType::FLAT;
+        } else if (index_type_str == INDEX_TYPE_HNSW) {
+            return IndexFactory::IndexType::HNSW;
+        }
+    }
+    return IndexFactory::IndexType::UNKNOWN; // 返回UNKNOWN值
+}
+
 
 void VectorDatabase::upsert(uint64_t id, const rapidjson::Document& data, IndexFactory::IndexType index_type) {
     rapidjson::StringBuffer buffer;
