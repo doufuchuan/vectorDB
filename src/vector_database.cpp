@@ -15,6 +15,9 @@ VectorDatabase::VectorDatabase(const std::string& db_path, const std::string& wa
     persistence_.init(wal_path); // 初始化 persistence_ 对象
 }
 
+/**
+ * 通过循环调用persistence_的readNextWALLog方法逐行读取日志文件，并根据日志记录的操作类型执行相应的数据恢复操作
+ */
 void VectorDatabase::reloadDatabase() {
     GlobalLogger->info("Entering VectorDatabase::reloadDatabase()"); // 在方法开始时打印日志
     std::string operation_type;

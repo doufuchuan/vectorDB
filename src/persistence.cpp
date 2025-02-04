@@ -34,6 +34,20 @@ uint64_t Persistence::getID() const {
     return increaseID_;
 }
 
+/**
+* @param operation_type 操作类型
+* @param json_data JSON 数据
+* @param version 日志版本
+* 首先获取一个唯一的日志 ID，然后将JSON对象数据转换为字符串格式并写入日志文件。
+* 如果写入过程发生错误，则记录错误消息；
+* 否则，记录写入成功的日志并强制将数据持久化到硬盘
+
+* 预写日志格式的四个字段：
+* log_id: 每次写入时自增，保证了预写日志的唯一性和有序性
+* version: 日志版本，以便将来对日志格式进行变更时能做向后兼容
+* operation_type: 用户实际的操作类型，例如upsert
+* buffer.GetString(): 用户请求数据时完整的JSON字符串
+*/
 void Persistence::writeWALLog(const std::string& operation_type, const rapidjson::Document& json_data, const std::string& version) { // 添加 version 参数
     uint64_t log_id = increaseID();
 
@@ -51,6 +65,9 @@ void Persistence::writeWALLog(const std::string& operation_type, const rapidjson
     }
 }
 
+/**
+* 一旦log_id读取成功，将系统的increaseID_更新为已写入日志ID中的最大值
+*/
 void Persistence::readNextWALLog(std::string* operation_type, rapidjson::Document* json_data) {
     GlobalLogger->debug("Reading next WAL log entry");
 
@@ -73,7 +90,7 @@ void Persistence::readNextWALLog(std::string* operation_type, rapidjson::Documen
 
         GlobalLogger->debug("Read WAL log entry: log_id={}, operation_type={}, json_data_str={}", log_id_str, *operation_type, json_data_str);
     } else {
-        wal_log_file_.clear();
+        wal_log_file_.clear(); //重置文件结束标志
         GlobalLogger->debug("No more WAL log entries to read");
     }
 }

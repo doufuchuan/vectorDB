@@ -91,5 +91,9 @@ curl -X POST -H "Content-Type: application/json" -d '{"vectors": [0.9], "k": 5, 
 curl -X POST -H "Content-Type: application/json" -d '{"vectors": [0.9], "k": 5, "indexType": "FLAT", "filter":{"fieldName":"int_field", "value":47, "op":"!="}}' http://localhost:8080/search
 ```
 
+# v0.1.2
+数据日志持久化
+
+
 # References
 《从零构建向量数据库》

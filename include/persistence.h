@@ -17,6 +17,6 @@ public:
     void readNextWALLog(std::string* operation_type, rapidjson::Document* json_data); // 更改返回类型为 void 并添加指针参数
 
 private:
-    uint64_t increaseID_;
+    uint64_t increaseID_; // 生成唯一id的自增变量
     std::fstream wal_log_file_; // 将 wal_log_file_ 类型更改为 std::fstream
 };
