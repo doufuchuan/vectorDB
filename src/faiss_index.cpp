@@ -3,11 +3,20 @@
 #include "constants.h" 
 #include <faiss/IndexIDMap.h>
 #include <faiss/IndexFlat.h>
+#include <faiss/index_io.h> // 更正头文件
 #include <iostream>
 #include <vector>
+#include <fstream> // 包含 <fstream> 以使用 std::ifstream
 
-bool RoaringBitmapIDSelector::is_member(int64_t id) const {
-    return roaring_bitmap_contains(bitmap_, static_cast<uint32_t>(id));
+// bool RoaringBitmapIDSelector::is_member(int64_t id) const {
+//     return roaring_bitmap_contains(bitmap_, static_cast<uint32_t>(id));
+// }
+
+bool RoaringBitmapIDSelector::is_member(int64_t id) const{
+    bool is_member = roaring_bitmap_contains(bitmap_, static_cast<uint32_t>(id)); // 获取 is_member 结果
+    GlobalLogger->debug("RoaringBitmapIDSelector::is_member id: {}, is_member: {}", id, is_member); // 打印 id 和 is_member 结果
+
+    return is_member;
 }
 
 FaissIndex::FaissIndex(faiss::Index* index) : index(index) {}
@@ -63,4 +72,21 @@ std::pair<std::vector<long>, std::vector<float>> FaissIndex::search_vectors(cons
         }
     }
     return {indices, distances};
+}
+
+void FaissIndex::saveIndex(const std::string& file_path) { // 添加 saveIndex 方法实现
+    faiss::write_index(index, file_path.c_str());
+}
+
+void FaissIndex::loadIndex(const std::string& file_path) { // 添加 loadIndex 方法实现
+    std::ifstream file(file_path); // 尝试打开文件
+    if (file.good()) { // 检查文件是否存在
+        file.close();
+        if (index != nullptr) {
+            delete index;
+        }
+        index = faiss::read_index(file_path.c_str());
+    } else {
+        GlobalLogger->warn("File not found: {}. Skipping loading index.", file_path);
+    }
 }

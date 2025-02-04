@@ -29,6 +29,9 @@ HttpServer::HttpServer(const std::string& host, int port, VectorDatabase* vector
     server.Post("/query", [this](const httplib::Request& req, httplib::Response& res) { // 注册query接口
         queryHandler(req, res);
     });
+    server.Post("/admin/snapshot", [this](const httplib::Request& req, httplib::Response& res) { // 添加 /admin/snapshot 请求处理程序
+        snapshotHandler(req, res);
+    });
 
 }
 
@@ -297,6 +300,20 @@ void HttpServer::queryHandler(const httplib::Request& req, httplib::Response& re
     json_response.AddMember(RESPONSE_RETCODE, RESPONSE_RETCODE_SUCCESS, allocator);
     setJsonResponse(json_response, res);
 
+}
+
+void HttpServer::snapshotHandler(const httplib::Request& req, httplib::Response& res) {
+    GlobalLogger->debug("Received snapshot request");
+
+    vector_database_->takeSnapshot(); // 调用 VectorDatabase::takeSnapshot
+
+    rapidjson::Document json_response;
+    json_response.SetObject();
+    rapidjson::Document::AllocatorType& allocator = json_response.GetAllocator();
+
+    // 设置响应
+    json_response.AddMember(RESPONSE_RETCODE, RESPONSE_RETCODE_SUCCESS, allocator);
+    setJsonResponse(json_response, res);
 }
 
 void HttpServer::setJsonResponse(const rapidjson::Document& json_response, httplib::Response& res) {

@@ -4,7 +4,7 @@ CXX = g++
 PWD := $(shell pwd)
 
 # 编译选项
-CXXFLAGS = -std=c++17 -g -Wall $(INCLUDES)
+CXXFLAGS = -std=c++17 -g -Wall  $(INCLUDES)
 
 LIBS = -L 
 

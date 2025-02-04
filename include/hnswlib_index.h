@@ -12,6 +12,8 @@ public:
 
     // 插入向量
     void insert_vectors(const std::vector<float>& data, uint64_t label);
+    void saveIndex(const std::string& file_path); // 添加 saveIndex 方法声明
+    void loadIndex(const std::string& file_path); // 添加 loadIndex 方法声明
 
     // 查询向量, 引入filter bitmap
     std::pair<std::vector<long>, std::vector<float>> search_vectors(const std::vector<float>& query, int k, const roaring_bitmap_t* bitmap = nullptr, int ef_search = 50);
@@ -28,6 +30,7 @@ public:
     };
 private:
     // int dim;
-    // hnswlib::SpaceInterface<float>* space;
+    hnswlib::SpaceInterface<float>* space;
     hnswlib::HierarchicalNSW<float>* index;
+    size_t max_elements; // 添加 max_elements 成员变量
 };

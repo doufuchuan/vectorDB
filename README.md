@@ -94,6 +94,15 @@ curl -X POST -H "Content-Type: application/json" -d '{"vectors": [0.9], "k": 5, 
 # v0.1.2
 数据日志持久化
 
+# v0.2
+数据快照持久化
+
+组合快照机制和预写日志，使系统可以基于快照时间进行恢复重启
+
+增加/admin/snapshot接口让管理员选择在合适的实际进行快照操作
+
+实现过滤索引的序列化和反序列化
+
 
 # References
 《从零构建向量数据库》

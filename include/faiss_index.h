@@ -23,7 +23,9 @@ public:
     void insert_vectors(const std::vector<float>& data, uint64_t label); //将向量数据和对应的标签写入索引
     void remove_vectors(const std::vector<long>& ids); // 添加remove_vectors接口
     std::pair<std::vector<long>, std::vector<float>> search_vectors(const std::vector<float>& query, int k, const roaring_bitmap_t* bitmap = nullptr);
-
+    void saveIndex(const std::string& file_path); // 添加 saveIndex 方法声明
+    void loadIndex(const std::string& file_path); // 将返回类型更改为 faiss::Index*
+    
 private:
     faiss::Index* index; //存储指向FAISS索引对象的指针
 };

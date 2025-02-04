@@ -18,6 +18,7 @@ public:
     std::pair<std::vector<long>, std::vector<float>> search(const rapidjson::Document& json_request); // 添加 search 方法声明
     void reloadDatabase(); // 添加 reloadDatabase 方法声明
     void writeWALLog(const std::string& operation_type, const rapidjson::Document& json_data); // 添加 writeWALLog 方法声明
+    void takeSnapshot(); // 添加 takeSnapshot 方法声明
     IndexFactory::IndexType getIndexTypeFromRequest(const rapidjson::Document& json_request); // 将 getIndexTypeFromRequest 方法设为 public
 
 private:

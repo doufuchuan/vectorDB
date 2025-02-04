@@ -8,16 +8,8 @@
 
 ScalarStorage::ScalarStorage(const std::string& db_path) {
     rocksdb::Options options;
-    
-    // 删除旧的数据库文件
-    rocksdb::Status status = rocksdb::DestroyDB(db_path, options);
-    if (!status.ok()) {
-        GlobalLogger->error("Error destroying the database:  {}", status.ToString());
-        throw std::runtime_error("Failed to open RocksDB: " + status.ToString());
-    }
-
     options.create_if_missing = true;
-    status = rocksdb::DB::Open(options, db_path, &db_);
+    rocksdb::Status status = rocksdb::DB::Open(options, db_path, &db_);
     if (!status.ok()) {
         GlobalLogger->error("Failed to open RocksDB: {}", status.ToString());
         throw std::runtime_error("Failed to open RocksDB: " + status.ToString());
@@ -57,4 +49,21 @@ rapidjson::Document ScalarStorage::get_scalar(uint64_t id) { // 将返回类型�
     GlobalLogger->debug("Data retrieved from ScalarStorage: {}, RocksDB status: {}", buffer.GetString(), status.ToString()); // 添加rocksdb::Status status
 
     return data;
+}
+
+void ScalarStorage::put(const std::string& key, const std::string& value) {
+    rocksdb::Status status = db_->Put(rocksdb::WriteOptions(), key, value);
+    if (!status.ok()) {
+        GlobalLogger->error("Failed to put key-value pair: {}", status.ToString());
+    }
+}
+
+std::string ScalarStorage::get(const std::string& key) {
+    std::string value;
+    rocksdb::Status status = db_->Get(rocksdb::ReadOptions(), key, &value);
+    if (!status.ok()) {
+        //GlobalLogger->error("Failed to get value for key {}: {}", key, status.ToString());
+        return "";
+    }
+    return value;
 }

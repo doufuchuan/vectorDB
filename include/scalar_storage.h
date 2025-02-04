@@ -18,6 +18,8 @@ public:
 
     // 根据ID查询向量函数
     rapidjson::Document get_scalar(uint64_t id); // 将返回类型更改为rapidjson::Document
+    void put(const std::string& key, const std::string& value); // 添加 put 方法声明
+    std::string get(const std::string& key); // 添加 get 方法声明
 
 private:
     // RocksDB实例
