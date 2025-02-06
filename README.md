@@ -1,6 +1,10 @@
 # vectorDB
 vector database
 
+v0.2 单机向量数据库
+
+![](./stand-alone.png)
+
 # v0.0.1
 ### FaissIndex
 系统中对扁平索引对象的封装，隐藏FAISS实现细节

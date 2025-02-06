@@ -8,3 +8,4 @@ third_party/snappy
 third_party/roaring
 ScalarStorage
 *.o
+*.drawio
