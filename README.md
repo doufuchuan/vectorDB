@@ -1,20 +1,20 @@
 # vectorDB
-vector database
+分布式向量数据库
 
-v0.2 单机向量数据库
+## v0.2 单机向量数据库
 
 ![](./stand-alone.png)
 
-# v0.0.1
-### FaissIndex
+### v0.0.1
+#### FaissIndex
 系统中对扁平索引对象的封装，隐藏FAISS实现细节
-### IndexFactory
+#### IndexFactory
 向量索引工厂类，进行向量索引生成和获取，支持扁平索引类型的索引
-### HttpServer
+#### HttpServer
 基于cpp-httplib实现，解析HTTP请求，调用对应索引执行具体操作，支持/insert和/search命令
-### GlobalLogger 
+#### GlobalLogger 
 基于spdlog实现，提供日志记录能力，提升系统持续运营能力
-### VDBServer
+#### VDBServer
 main函数，服务的初始化和启动入口
 
 -- 依赖 --
@@ -25,7 +25,7 @@ rapidjson
 
 编译得到libxxx.a文件
 
-# 运行
+### 运行
 
 ```
 ./vdb_server
@@ -45,7 +45,7 @@ curl -X POST -H "Content-Type: application/json" -d '{"vectors": [0.8], "k": 2, 
 {"vectors":[2],"distances":[0.09000000357627869],"retCode":0}
 ```
 
-# v0.0.2
+### v0.0.2
 实现HNSW索引封装
 
 依赖：hnswlib
@@ -65,7 +65,7 @@ curl -X POST -H "Content-Type: application/json" -d '{"vectors": [0.5], "k": 2, 
 {"vectors":[3],"distances":[0.09000000357627869],"retCode":0}
 ```
 
-# v0.1
+### v0.1
 混合索引
 - 基于RocksDB实现标量数据索引
     - `ScalarStorage`类
@@ -80,7 +80,7 @@ curl -X POST -H "Content-Type: application/json" -d '{"vectors": [0.2], "id": 3,
 curl -X POST -H "Content-Type: application" -d {"id": 3}' http://localhost:8080/query
 ```
 
-# v0.1.1
+### v0.1.1
 过滤索引
 
 ```
@@ -95,10 +95,10 @@ curl -X POST -H "Content-Type: application/json" -d '{"vectors": [0.9], "k": 5, 
 curl -X POST -H "Content-Type: application/json" -d '{"vectors": [0.9], "k": 5, "indexType": "FLAT", "filter":{"fieldName":"int_field", "value":47, "op":"!="}}' http://localhost:8080/search
 ```
 
-# v0.1.2
+### v0.1.2
 数据日志持久化
 
-# v0.2
+### v0.2
 数据快照持久化
 
 组合快照机制和预写日志，使系统可以基于快照时间进行恢复重启
@@ -107,6 +107,15 @@ curl -X POST -H "Content-Type: application/json" -d '{"vectors": [0.9], "k": 5, 
 
 实现过滤索引的序列化和反序列化
 
+## 分布式向量数据库
+
+### v0.3
+
+- 建立主从关系
+    - 自定义实现状态机和数据复制逻辑
+    - Raft信息统一管理
+    - HttpServer集成主从功能
+- 实现数据复制
 
 # References
 《从零构建向量数据库》

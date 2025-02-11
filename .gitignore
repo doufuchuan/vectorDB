@@ -6,6 +6,7 @@ third_party/hnswlib
 third_party/rocksdb
 third_party/snappy
 third_party/roaring
+third_party/nuraft
 ScalarStorage
 *.o
 *.drawio

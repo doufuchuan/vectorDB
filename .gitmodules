@@ -22,3 +22,6 @@
 [submodule "third_party/roaring"]
 	path = third_party/roaring
 	url = https://github.com/RoaringBitmap/CRoaring.git
+[submodule "third_party/nuraft"]
+	path = third_party/nuraft
+	url = https://github.com/eBay/NuRaft.git

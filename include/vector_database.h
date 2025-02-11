@@ -3,6 +3,7 @@
 #include "scalar_storage.h"
 #include "index_factory.h"
 #include "persistence.h" // 包含 persistence.h 以使用 Persistence 类
+#include "raft_stuff.h"
 #include <string>
 #include <vector>
 #include <rapidjson/document.h>
