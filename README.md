@@ -117,7 +117,8 @@ curl -X POST -H "Content-Type: application/json" -d '{"vectors": [0.9], "k": 5, 
     - HttpServer集成主从功能
 - 实现数据复制
 
-`export ASAN_OPTIONS=alloc_dealloc_mismatch=0` 可能存在内存泄漏，暂未解决
+可能存在内存泄漏，暂未解决，运行前加入设置环境变量
+`export ASAN_OPTIONS=alloc_dealloc_mismatch=0` 
 `./vdb_server conf.ini`
 
 提主：
