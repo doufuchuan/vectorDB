@@ -40,7 +40,7 @@ std::pair<std::vector<long>, std::vector<float>> HNSWLibIndex::search_vectors(co
     }
 
     if (bitmap != nullptr) {
-         delete selector;
+         delete[] selector;
     } 
 
     return {indices, distances};

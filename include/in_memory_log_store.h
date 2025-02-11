@@ -21,6 +21,8 @@ limitations under the License.
 #include "libnuraft/internal_timer.hxx"
 #include "libnuraft/log_store.hxx"
 
+#include "vector_database.h" // 包含 VectorDatabase 类的头文件
+
 #include <atomic>
 #include <map>
 #include <mutex>
@@ -31,22 +33,22 @@ class raft_server;
 
 class inmem_log_store : public log_store {
 public:
-    inmem_log_store();
+    inmem_log_store(VectorDatabase* vector_database); // 添加 VectorDatabase 指针参数
 
     ~inmem_log_store();
 
-    __nocopy__(inmem_log_store); // 禁止复制构造函数
+    __nocopy__(inmem_log_store);
 
 public:
-    ulong next_slot() const; // 获取下一个日志槽位
+    ulong next_slot() const;
 
-    ulong start_index() const; // 获取起始索引
+    ulong start_index() const;
 
-    ptr<log_entry> last_entry() const; // 获取最后一个日志
+    ptr<log_entry> last_entry() const;
 
-    ulong append(ptr<log_entry>& entry); // 追加日志条目
+    ulong append(ptr<log_entry>& entry);
 
-    void write_at(ulong index, ptr<log_entry>& entry); // 在指定索引处写入日志条目
+    void write_at(ulong index, ptr<log_entry>& entry);
 
     ptr<std::vector<ptr<log_entry>>> log_entries(ulong start, ulong end);
 
@@ -72,24 +74,24 @@ public:
     void set_disk_delay(raft_server* raft, size_t delay_ms);
 
 private:
-    static ptr<log_entry> make_clone(const ptr<log_entry>& entry); // 创建日志条目副本的静态函数
+    static ptr<log_entry> make_clone(const ptr<log_entry>& entry);
 
     void disk_emul_loop();
 
     /**
      * Map of <log index, log data>.
      */
-    std::map<ulong, ptr<log_entry>> logs_; // 日志条目的容器，以索引为键
+    std::map<ulong, ptr<log_entry>> logs_;
 
     /**
      * Lock for `logs_`.
      */
-    mutable std::mutex logs_lock_; // 保护日志容器的互斥锁
+    mutable std::mutex logs_lock_;
 
     /**
      * The index of the first log.
      */
-    std::atomic<ulong> start_idx_; // 日志起始索引，原子类型，用于并发操作
+    std::atomic<ulong> start_idx_;
 
     /**
      * Backward pointer to Raft server.
@@ -130,8 +132,9 @@ private:
      */
     std::atomic<uint64_t> disk_emul_last_durable_index_;
 
+    VectorDatabase* vector_database_; // 添加一个 VectorDatabase 指针成员变量
+
     // Testing purpose --------------- END
 };
 
 }
-

@@ -1,17 +1,17 @@
-[submodule "rapidjson"]
-	path = rapidjson
+[submodule "third_party/rapidjson"]
+	path = third_party/rapidjson
 	url = https://github.com/Tencent/rapidjson.git
-[submodule "faiss"]
-	path = faiss
+[submodule "third_party/faiss"]
+	path = third_party/faiss
 	url = https://github.com/facebookresearch/faiss.git
-[submodule "spdlog"]
-	path = spdlog
+[submodule "third_party/spdlog"]
+	path = third_party/spdlog
 	url = https://github.com/gabime/spdlog.git
 [submodule "third_party/hnswlib"]
 	path = third_party/hnswlib
 	url = https://github.com/nmslib/hnswlib
-[submodule "hnswlib"]
-	path = hnswlib
+[submodule "third_party/hnswlib"]
+	path = third_party/hnswlib
 	url = https://github.com/nmslib/hnswlib
 [submodule "third_party/rocksdb"]
 	path = third_party/rocksdb

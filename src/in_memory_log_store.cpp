@@ -16,6 +16,7 @@ limitations under the License.
 **************************************************************************/
 
 #include "in_memory_log_store.h"
+#include "logger.h" // 包含 logger.h 以使用日志记录器
 
 #include "libnuraft/nuraft.hxx"
 
@@ -23,13 +24,14 @@ limitations under the License.
 
 namespace nuraft {
 
-inmem_log_store::inmem_log_store()
-    : start_idx_(1)
+inmem_log_store::inmem_log_store(VectorDatabase* vector_database)
+    : start_idx_(vector_database->getStartIndexID() + 1)
     , raft_server_bwd_pointer_(nullptr)
     , disk_emul_delay(0)
     , disk_emul_thread_(nullptr)
     , disk_emul_thread_stop_signal_(false)
     , disk_emul_last_durable_index_(0)
+    , vector_database_(vector_database)
 {
     // Dummy entry for index 0.
     ptr<buffer> buf = buffer::alloc(sz_ulong);
@@ -89,10 +91,21 @@ ulong inmem_log_store::append(ptr<log_entry>& entry) {
     size_t idx = start_idx_ + logs_.size() - 1; // 计算当前日志条目索引
     logs_[idx] = clone; // 将克隆的日志条目添加到容器中
 
-    if (disk_emul_delay) {
+    if (entry->get_val_type() == log_val_type::app_log) {// 根据日志类型打印日志内容
+        buffer& data = clone->get_buf();
+        std::string content(reinterpret_cast<const char*>(data.data() + data.pos()+sizeof(int)), data.size()-sizeof(int));
+        GlobalLogger->debug("Append app logs {}, content: {}, value type {}", idx, content, "nuraft::log_val_type::app_log"); // 添加打印日志
+        vector_database_->writeWALLogWithID(idx, content);
+    } else {
+        buffer& data = clone->get_buf();
+        std::string content(reinterpret_cast<const char*>(data.data() + data.pos()), data.size());
+        GlobalLogger->debug("Append other logs {}, content: {}, value type {}", idx, content, static_cast<int>(entry->get_val_type())); // 添加打印日志
+    }
+
+    if (disk_emul_delay) { // 模拟硬盘写入
         uint64_t cur_time = timer_helper::get_timeofday_us();
         disk_emul_logs_being_written_[cur_time + disk_emul_delay * 1000] = idx;
-        disk_emul_ea_.invoke();
+        disk_emul_ea_.invoke(); //触发硬盘模拟事件
     }
 
     return idx;
@@ -108,6 +121,14 @@ void inmem_log_store::write_at(ulong index, ptr<log_entry>& entry) {
         itr = logs_.erase(itr);
     }
     logs_[index] = clone;
+
+    buffer& data = clone->get_buf();
+    std::string content(reinterpret_cast<const char*>(data.data() + data.pos()+sizeof(int)), data.size()-sizeof(int));
+    GlobalLogger->debug("Append logs {}, content: {}, value type {}", index, content, static_cast<int>(entry->get_val_type())); // 添加打印日志
+    
+    if (entry->get_val_type() == log_val_type::app_log) {
+        vector_database_->writeWALLogWithID(index, content);
+    }
 
     if (disk_emul_delay) {
         uint64_t cur_time = timer_helper::get_timeofday_us();

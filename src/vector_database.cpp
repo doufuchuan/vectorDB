@@ -56,6 +56,11 @@ void VectorDatabase::writeWALLog(const std::string& operation_type, const rapidj
     persistence_.writeWALLog(operation_type, json_data, version); // 将 version 传递给 writeWALLog 方法
 }
 
+void VectorDatabase::writeWALLogWithID(uint64_t log_id, const std::string& data) {
+    std::string operation_type = "upsert"; // 默认 operation_type 为 upsert
+    std::string version = "1.0"; // 您可以根据需要设置版本
+    persistence_.writeWALRawLog(log_id, operation_type, data, version); // 调用 persistence_ 的 writeWALRawLog 方法
+}
 IndexFactory::IndexType VectorDatabase::getIndexTypeFromRequest(const rapidjson::Document& json_request) {
     // 获取请求参数中的索引类型
     if (json_request.HasMember(REQUEST_INDEX_TYPE) && json_request[REQUEST_INDEX_TYPE].IsString()) {
@@ -151,7 +156,7 @@ void VectorDatabase::upsert(uint64_t id, const rapidjson::Document& data, IndexF
             
             filter_index->updateIntFieldFilter(field_name, old_field_value_p, field_value, id);
             if(old_field_value_p) {
-                delete old_field_value_p;
+                delete[] old_field_value_p;
             }
         }
     }
@@ -223,11 +228,15 @@ std::pair<std::vector<long>, std::vector<float>> VectorDatabase::search(const ra
             break;
     }
     if (filter_bitmap != nullptr) {
-        delete filter_bitmap;
+        delete[] filter_bitmap;
     }
     return results;
 }
 
 void VectorDatabase::takeSnapshot() { // 添加 takeSnapshot 方法实现
     persistence_.takeSnapshot(scalar_storage_);
+}
+
+int64_t VectorDatabase::getStartIndexID() const {
+    return persistence_.getID(); // 通过调用 persistence_ 的 GetID 方法获取起始索引 ID
 }

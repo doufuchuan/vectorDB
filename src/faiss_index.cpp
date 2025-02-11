@@ -83,7 +83,7 @@ void FaissIndex::loadIndex(const std::string& file_path) { // 添加 loadIndex �
     if (file.good()) { // 检查文件是否存在
         file.close();
         if (index != nullptr) {
-            delete index;
+            delete[] index;
         }
         index = faiss::read_index(file_path.c_str());
     } else {

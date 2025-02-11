@@ -9,7 +9,7 @@
 #include <sstream>
 #include <string>
 
-Persistence::Persistence() : increaseID_(1) {}
+Persistence::Persistence() : increaseID_(10), lastSnapshotID_(0) {} // 初始化 lastSnapshotID_ 成员变量
 
 Persistence::~Persistence() {
     if (wal_log_file_.is_open()) {
@@ -63,6 +63,17 @@ void Persistence::writeWALLog(const std::string& operation_type, const rapidjson
         GlobalLogger->error("An error occurred while writing the WAL log entry. Reason: {}", std::strerror(errno)); // 使用日志打印错误消息和原因
     } else {
        GlobalLogger->debug("Wrote WAL log entry: log_id={}, version={}, operation_type={}, json_data_str={}", log_id, version, operation_type, buffer.GetString()); // 打印日志
+       wal_log_file_.flush(); // 强制持久化
+    }
+}
+
+void Persistence::writeWALRawLog(uint64_t log_id, const std::string& operation_type, const std::string& raw_data, const std::string& version) {
+    wal_log_file_ << log_id << "|" << version << "|" << operation_type << "|" << raw_data << std::endl; // 将 version 添加到日志格式中
+
+    if (wal_log_file_.fail()) { // 检查是否发生错误
+        GlobalLogger->error("An error occurred while writing the WAL raw log entry. Reason: {}", std::strerror(errno)); // 使用日志打印错误消息和原因
+    } else {
+       GlobalLogger->debug("Wrote WAL raw log entry: log_id={}, version={}, operation_type={}, raw_data={}", log_id, version, operation_type, raw_data); // 打印日志
        wal_log_file_.flush(); // 强制持久化
     }
 }

@@ -44,9 +44,13 @@ HttpServer::HttpServer(const std::string& host, int port, VectorDatabase* vector
     server.Get("/admin/listNode", [this](const httplib::Request& req, httplib::Response& res) {
         listNodeHandler(req, res);
     });   
+    server.Get("/admin/getNode", [this](const httplib::Request& req, httplib::Response& res) {
+        getNodeHandler(req, res);
+    });   
 }
 
 void HttpServer::start() {
+    server.set_payload_max_length(64 * 1024 * 1024);
     server.listen(host.c_str(), port);
 }
 
@@ -264,6 +268,9 @@ void HttpServer::upsertHandler(const httplib::Request& req, httplib::Response& r
     IndexFactory::IndexType indexType = getIndexTypeFromRequest(json_request);
     vector_database_->upsert(label, json_request, indexType);
 
+    // 调用 RaftStuff 的 appendEntries 方法将新的日志条目添加到集群中
+    raft_stuff_->appendEntries(req.body);
+
     rapidjson::Document json_response;
     json_response.SetObject();
     rapidjson::Document::AllocatorType& response_allocator = json_response.GetAllocator();
@@ -321,6 +328,32 @@ void HttpServer::snapshotHandler(const httplib::Request& req, httplib::Response&
     rapidjson::Document json_response;
     json_response.SetObject();
     rapidjson::Document::AllocatorType& allocator = json_response.GetAllocator();
+
+    // 设置响应
+    json_response.AddMember(RESPONSE_RETCODE, RESPONSE_RETCODE_SUCCESS, allocator);
+    setJsonResponse(json_response, res);
+}
+
+void HttpServer::getNodeHandler(const httplib::Request& req, httplib::Response& res) {
+    GlobalLogger->debug("Received getNode request");
+
+    // 获取所有节点信息
+    std::tuple<int, std::string, std::string, nuraft::ulong, nuraft::ulong> node_info = raft_stuff_->getCurrentNodesInfo();
+
+    rapidjson::Document json_response;
+    json_response.SetObject();
+    rapidjson::Document::AllocatorType& allocator = json_response.GetAllocator();
+
+    // 将节点信息添加到JSON响应中
+    rapidjson::Value nodes_array(rapidjson::kArrayType);
+    rapidjson::Value node_object(rapidjson::kObjectType);
+    node_object.AddMember("nodeId", std::get<0>(node_info), allocator);
+    node_object.AddMember("endpoint", rapidjson::Value(std::get<1>(node_info).c_str(), allocator), allocator);
+    node_object.AddMember("state", rapidjson::Value(std::get<2>(node_info).c_str(), allocator), allocator); // 添加节点状态
+    node_object.AddMember("last_log_idx", std::get<3>(node_info), allocator); // 添加节点最后日志索引
+    node_object.AddMember("last_succ_resp_us", std::get<4>(node_info), allocator); // 添加节点最后成功响应时间
+    
+    json_response.AddMember("node", node_object, allocator);
 
     // 设置响应
     json_response.AddMember(RESPONSE_RETCODE, RESPONSE_RETCODE_SUCCESS, allocator);
