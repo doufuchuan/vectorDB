@@ -31,7 +31,11 @@ private:
     void getNodeInfo(const httplib::Request& req, httplib::Response& res);
     void addNode(const httplib::Request& req, httplib::Response& res);
     void removeNode(const httplib::Request& req, httplib::Response& res);
+    static size_t writeCallback(void *contents, size_t size, size_t nmemb, void *userp);
 
     void getInstance(const httplib::Request& req, httplib::Response& res);
+
+    void startNodeUpdateTimer();
+    void updateNodeStates();
 
 };

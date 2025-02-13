@@ -2,6 +2,7 @@
 #include "logger.h"
 #include <sstream>
 #include <iostream>
+#include <curl/curl.h>
 #include "rapidjson/document.h"
 #include "rapidjson/stringbuffer.h"
 #include "rapidjson/writer.h"
@@ -204,7 +205,101 @@ void MasterServer::getInstance(const httplib::Request& req, httplib::Response& r
     }
 }
 
+void MasterServer::startNodeUpdateTimer() {
+    std::thread([this]() {
+        while (true) { // 这里可能需要一种更优雅的退出机制
+            std::this_thread::sleep_for(std::chrono::seconds(30)); // 每30秒更新一次
+            updateNodeStates();
+        }
+    }).detach();
+}
 
+size_t MasterServer::writeCallback(void *contents, size_t size, size_t nmemb, void *userp) {
+    ((std::string*)userp)->append((char*)contents, size * nmemb);
+    return size * nmemb;
+}
+
+void MasterServer::updateNodeStates() {
+    CURL* curl = curl_easy_init(); // 初始化 CURL
+
+    if (!curl) {
+        GlobalLogger->error("CURL initialization failed");
+        return;
+    }
+
+    try {
+        std::string nodesKeyPrefix = "/instances/";
+        GlobalLogger->info("Fetching nodes list from etcd");
+        // 从 etcd 获取节点列表
+        etcd::Response etcdResponse = etcdClient_.ls(nodesKeyPrefix).get();
+
+        for (size_t i = 0; i < etcdResponse.keys().size(); ++i) {
+            const std::string& nodeKey = etcdResponse.keys()[i];
+            GlobalLogger->debug("Processing node: {}", nodeKey);
+
+            const std::string& nodeValue = etcdResponse.values()[i].as_string();
+
+            // 解析节点信息
+            rapidjson::Document nodeDoc;
+            nodeDoc.Parse(nodeValue.c_str());
+            if (!nodeDoc.IsObject()) {
+                GlobalLogger->warn("Invalid JSON format for node: {}", nodeKey);
+                continue;
+            }
+            // 构建节点状态查询 URL
+            std::string getNodeUrl = std::string(nodeDoc["url"].GetString()) + "/admin/getNode";
+            GlobalLogger->debug("Sending request to {}", getNodeUrl);
+
+            curl_easy_setopt(curl, CURLOPT_URL, getNodeUrl.c_str());
+            curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeCallback);
+
+            std::string responseStr;
+            curl_easy_setopt(curl, CURLOPT_WRITEDATA, &responseStr);
+
+            // 执行 HTTP GET 请求
+            CURLcode res = curl_easy_perform(curl);
+            if (res != CURLE_OK) {
+                GlobalLogger->error("curl_easy_perform() failed: {}", curl_easy_strerror(res));
+                continue;
+            }
+
+            // 解析节点状态响应
+            rapidjson::Document getNodeResponse;
+            getNodeResponse.Parse(responseStr.c_str());
+            if (!getNodeResponse.HasMember("node") || !getNodeResponse["node"].IsObject()) {
+                GlobalLogger->error("Invalid JSON format in response from {}", getNodeUrl);
+                continue;
+            }
+            //更新节点角色信息
+            const rapidjson::Value& node = getNodeResponse["node"];
+            if (node.HasMember("state") && node["state"].IsString()) {
+                std::string state = node["state"].GetString();
+                int newRole = (state == "leader") ? 0 : 1;
+
+                // 如果 etcd 中的角色信息已经一致，则跳过更新
+                if (nodeDoc.HasMember("role") && nodeDoc["role"].GetInt() == newRole) {
+                    GlobalLogger->debug("No role update needed for node {}", nodeKey);
+                    continue;
+                }
+
+                GlobalLogger->info("Updating role for node {}: {}", nodeKey, newRole);
+
+                // 更新 etcd 中的节点信息
+                nodeDoc["role"].SetInt(newRole);
+                rapidjson::StringBuffer buffer;
+                rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+                nodeDoc.Accept(writer);
+
+                etcdClient_.set(nodeKey, buffer.GetString()).get();
+                GlobalLogger->info("Updated node {} role to {}", nodeKey, newRole);
+            }
+        }
+    } catch (const std::exception& e) {
+        GlobalLogger->error("Exception while updating node states: {}", e.what());
+    }
+
+    curl_easy_cleanup(curl); // 清理 CURL 资源
+}
 
 
 
