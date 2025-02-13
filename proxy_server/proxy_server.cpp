@@ -121,15 +121,17 @@ void ProxyServer::forwardRequest(const httplib::Request& req, httplib::Response&
     }
 
     size_t nodeIndex = 0;
-    if (writePaths_.find(path) != writePaths_.end()) {
-        // 写请求 - 寻找 role 为 0 的节点
+    // 检查是否需要强制路由到主节点
+    bool forceMaster = (req.has_param("forceMaster") && req.get_param_value("forceMaster") == "true");
+    if (forceMaster || writePaths_.find(path) != writePaths_.end()) {
+        // 强制主节点或写请求 - 寻找 role 为 0 的节点
         for (size_t i = 0; i < nodes_[activeIndex].size(); ++i) {
             if (nodes_[activeIndex][i].role == 0) {
                 nodeIndex = i;
                 break;
             }
         }
-    } else {
+    } else {    
         // 读请求 - 轮询选择任何角色的节点
         nodeIndex = nextNodeIndex_.fetch_add(1) % nodes_[activeIndex].size();
     }
