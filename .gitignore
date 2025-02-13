@@ -7,6 +7,7 @@ third_party/rocksdb
 third_party/snappy
 third_party/roaring
 third_party/nuraft
+third_party/etcd-cpp-apiv3
 ScalarStorage
 *.o
 *.drawio

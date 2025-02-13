@@ -118,26 +118,45 @@ curl -X POST -H "Content-Type: application/json" -d '{"vectors": [0.9], "k": 5, 
 - 实现数据复制
 
 可能存在内存泄漏，暂未解决，运行前加入设置环境变量
+
 `export ASAN_OPTIONS=alloc_dealloc_mismatch=0` 
+
+运行：
 `./vdb_server conf.ini`
 
 提主：
+
 `curl -X POST -H "Content-Type: application/json" -d '{}' http://localhost:8080/admin/setLeader`
 
 查看节点信息：
+
 `curl -X GET http://localhost:8080/admin/listNode`
 
 写入数据
+
 `curl -X POST -H "Content-Type: application/json" -d '{"id": 6, "vectors": [0.9], "int_field": 49, "indexType": "FLAT"}' http://localhost:8080/upsert`
 
 读数据
+
 `curl -X POST -H "Content-Type: application/json" -d '{"vectors": [0.9], "k": 5, "indexType": "FLAT", "filter":{"fieldName":"int_field","value":43, "op":"!="}}' http://localhost:8080/search`
 
 加从节点：
+
 `curl -X POST -H "Content-Type: application/json" -d '{"nodeId": 2, "endpoint": "127.0.0.1:9091"}' http://localhost:8080/admin/addFollower`
 
+### v0.4
 
-`delete`内存泄漏
+安装etcd
 
+`https://github.com/etcd-cpp-apiv3/etcd-cpp-apiv3`
+
+`sudo apt install etcd-server`
+
+
+- 集群流量管理
+    - 元数据管理
+    - 统一的流量入口
+        - 双缓冲数据更新
+    - 读写分离
 # References
 《从零构建向量数据库》

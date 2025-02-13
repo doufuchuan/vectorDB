@@ -1,0 +1,14 @@
+查看node信息
+curl "http://localhost:6060/getNodeInfo?instanceId=instance1&nodeId=node123"
+
+增加node1信息
+curl -X POST "http://localhost:6060/addNode" -H "Content-Type: application/json" -d '{"instanceId": "instance1", "nodeId": "node123", "url": "http://127.0.0.1:8080", "role": 1, "status": 0}'
+
+删除node信息
+curl -X DELETE "http://localhost:6060/removeNode?instanceId=instance1&nodeId=node124"
+
+查看instance下的所有node信息
+curl "http://localhost:6060/getInstance?instanceId=instance1"
+
+增加node2信息
+curl -X POST "http://localhost:6060/addNode" -H "Content-Type: application/json" -d '{"instanceId": "instance1", "nodeId": "node124", "url": "http://127.0.0.1:9090", "role": 1, "status": 0}'
