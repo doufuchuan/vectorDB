@@ -1,6 +1,7 @@
 # vectorDB
 分布式向量数据库
 
+![](./distribute.png)
 ## v0.2 单机向量数据库
 
 ![](./stand-alone.png)
