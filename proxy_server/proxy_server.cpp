@@ -215,11 +215,15 @@ void ProxyServer::fetchAndUpdateNodes() {
     nodes_[inactiveIndex].clear(); // 清空非活动数组，准备添加新的节点信息
     const auto& nodesArray = doc["data"]["nodes"].GetArray();
     for (const auto& nodeVal : nodesArray) {
-        NodeInfo node;
-        node.nodeId = nodeVal["nodeId"].GetString();
-        node.url = nodeVal["url"].GetString();
-        node.role = nodeVal["role"].GetInt();
-        nodes_[inactiveIndex].push_back(node);
+        if (nodeVal["status"].GetInt() == 1) { // 只添加状态为 1 的节点
+            NodeInfo node;
+            node.nodeId = nodeVal["nodeId"].GetString();
+            node.url = nodeVal["url"].GetString();
+            node.role = nodeVal["role"].GetInt();
+            nodes_[inactiveIndex].push_back(node);
+        } else {
+            GlobalLogger->info("Skipping inactive node: {}", nodeVal["nodeId"].GetString());
+        }
     }
 
     // 原子地切换活动数组索引

@@ -158,5 +158,11 @@ curl -X POST -H "Content-Type: application/json" -d '{"vectors": [0.9], "k": 5, 
     - 统一的流量入口
         - 双缓冲数据更新
     - 读写分离
+
+### v0.5
+- 集群异常管理
+    - 发现新主节点
+    - 发现新故障从节点
+    - 实现故障切换
 # References
 《从零构建向量数据库》
