@@ -25,6 +25,7 @@ private:
     etcd::Client etcdClient_;
     httplib::Server httpServer_;
     int httpPort_;
+    std::map<std::string, int> nodeErrorCounts; // 错误计数器
 
     void setResponse(httplib::Response& res, int retCode, const std::string& msg, const rapidjson::Document* data = nullptr);
 

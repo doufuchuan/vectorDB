@@ -258,40 +258,41 @@ void MasterServer::updateNodeStates() {
 
             // 执行 HTTP GET 请求
             CURLcode res = curl_easy_perform(curl);
+            bool needsUpdate = false;
             if (res != CURLE_OK) {
                 GlobalLogger->error("curl_easy_perform() failed: {}", curl_easy_strerror(res));
-                continue;
-            }
-
-            // 解析节点状态响应
-            rapidjson::Document getNodeResponse;
-            getNodeResponse.Parse(responseStr.c_str());
-            if (!getNodeResponse.HasMember("node") || !getNodeResponse["node"].IsObject()) {
-                GlobalLogger->error("Invalid JSON format in response from {}", getNodeUrl);
-                continue;
-            }
-            //更新节点角色信息
-            const rapidjson::Value& node = getNodeResponse["node"];
-            if (node.HasMember("state") && node["state"].IsString()) {
-                std::string state = node["state"].GetString();
-                int newRole = (state == "leader") ? 0 : 1;
-
-                // 如果 etcd 中的角色信息已经一致，则跳过更新
-                if (nodeDoc.HasMember("role") && nodeDoc["role"].GetInt() == newRole) {
-                    GlobalLogger->debug("No role update needed for node {}", nodeKey);
-                    continue;
+                nodeErrorCounts[nodeKey]++;
+                if (nodeErrorCounts[nodeKey] >= 5 && nodeDoc["status"].GetInt() != 0) {
+                    nodeDoc["status"].SetInt(0); // Set status to 0 (abnormal)
+                    needsUpdate = true;
+                }
+            } else {
+                nodeErrorCounts[nodeKey] = 0; // Reset error count
+                if (nodeDoc["status"].GetInt() != 1) {
+                    nodeDoc["status"].SetInt(1); // Set status to 1 (normal)
+                    needsUpdate = true;
                 }
 
-                GlobalLogger->info("Updating role for node {}: {}", nodeKey, newRole);
+                rapidjson::Document getNodeResponse;
+                getNodeResponse.Parse(responseStr.c_str());
+                if (getNodeResponse.HasMember("node") && getNodeResponse["node"].IsObject()) {
+                    std::string state = getNodeResponse["node"]["state"].GetString();
+                    int newRole = (state == "leader") ? 0 : 1;
 
-                // 更新 etcd 中的节点信息
-                nodeDoc["role"].SetInt(newRole);
+                    if (nodeDoc["role"].GetInt() != newRole) {
+                        nodeDoc["role"].SetInt(newRole); // Update role
+                        needsUpdate = true;
+                    }
+                }
+            }
+
+            if (needsUpdate) {
                 rapidjson::StringBuffer buffer;
                 rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
                 nodeDoc.Accept(writer);
 
                 etcdClient_.set(nodeKey, buffer.GetString()).get();
-                GlobalLogger->info("Updated node {} role to {}", nodeKey, newRole);
+                GlobalLogger->info("Updated node {} with new status and role", nodeKey);
             }
         }
     } catch (const std::exception& e) {
