@@ -2,6 +2,10 @@
 分布式向量数据库
 
 ![](./distribute.png)
+
+分片管理
+![alt text](fenpian.png)
+
 ## v0.2 单机向量数据库
 
 ![](./stand-alone.png)
