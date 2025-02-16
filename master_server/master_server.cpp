@@ -216,7 +216,7 @@ void MasterServer::getInstance(const httplib::Request& req, httplib::Response& r
 void MasterServer::startNodeUpdateTimer() {
     std::thread([this]() {
         while (true) { // 这里可能需要一种更优雅的退出机制
-            std::this_thread::sleep_for(std::chrono::seconds(30)); // 每30秒更新一次
+            std::this_thread::sleep_for(std::chrono::seconds(10)); // 每10秒更新一次
             updateNodeStates();
         }
     }).detach();
@@ -293,6 +293,8 @@ void MasterServer::updateNodeStates() {
                     }
                 }
             }
+            
+            GlobalLogger->info("Updated check needsUpdate {} ", needsUpdate);
 
             if (needsUpdate) {
                 rapidjson::StringBuffer buffer;
