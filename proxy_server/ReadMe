@@ -6,3 +6,5 @@ curl -X POST -H "Content-Type: application/json" -d '{"vectors": [0.9], "k": 5, 
 
 写请求
 curl -X POST -H "Content-Type: application/json" -d '{"id": 6, "vectors": [0.9], "int_field": 49, "indexType": "FLAT"}' http://localhost:80/upsert
+
+proxy只保留status为正确的节点

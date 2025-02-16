@@ -48,6 +48,14 @@ MasterServer::MasterServer(const std::string& etcdEndpoints, int httpPort)
     httpServer_.Get("/getInstance", [this](const httplib::Request& req, httplib::Response& res) {
         getInstance(req, res);
     });
+    httpServer_.Get("/getPartitionConfig", [this](const httplib::Request& req, httplib::Response& res) {
+        getPartitionConfig(req, res);
+    });
+    httpServer_.Post("/updatePartitionConfig", [this](const httplib::Request& req, httplib::Response& res) {
+        updatePartitionConfig(req, res);
+    });
+    // 启动定时器
+    startNodeUpdateTimer();
 }
 
 void MasterServer::run() {
@@ -302,5 +310,117 @@ void MasterServer::updateNodeStates() {
     curl_easy_cleanup(curl); // 清理 CURL 资源
 }
 
+void MasterServer::doUpdatePartitionConfig(const std::string& instanceId, const std::string& partitionKey, int numberOfPartitions, const std::list<Partition>& partitions) {
+    rapidjson::Document doc;
+    doc.SetObject();
+    rapidjson::Document::AllocatorType& allocator = doc.GetAllocator();
 
+    // 设置分区键和分区数目
+    doc.AddMember("partitionKey", rapidjson::Value(partitionKey.c_str(), allocator), allocator);
+    doc.AddMember("numberOfPartitions", numberOfPartitions, allocator);
+
+    // 设置分区映射
+    rapidjson::Value partitionArray(rapidjson::kArrayType);
+    for (const auto& partition : partitions) {
+        rapidjson::Value partitionObj(rapidjson::kObjectType);
+        partitionObj.AddMember("partitionId", partition.partitionId, allocator);
+        partitionObj.AddMember("nodeId", rapidjson::Value(partition.nodeId.c_str(), allocator), allocator);
+        partitionArray.PushBack(partitionObj, allocator);
+    }
+    doc.AddMember("partitions", partitionArray, allocator);
+
+    // 将配置写入 etcd
+    rapidjson::StringBuffer buffer;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+    doc.Accept(writer);
+
+    std::string etcdKey = "/instancesConfig/" + instanceId + "/partitionConfig";
+    etcdClient_.set(etcdKey, buffer.GetString()).get();
+    GlobalLogger->info("Updated partition config for instance {}", instanceId);
+}
+
+PartitionConfig MasterServer::doGetPartitionConfig(const std::string& instanceId) {
+    PartitionConfig config;
+    std::string etcdKey = "/instancesConfig/" + instanceId + "/partitionConfig";
+    etcd::Response etcdResponse = etcdClient_.get(etcdKey).get();
+    rapidjson::Document doc;
+    doc.Parse(etcdResponse.value().as_string().c_str());
+
+    if (doc.IsObject()) {
+        if (doc.HasMember("partitionKey")) {
+            config.partitionKey = doc["partitionKey"].GetString();
+        }
+        if (doc.HasMember("numberOfPartitions")) {
+            config.numberOfPartitions = doc["numberOfPartitions"].GetInt();
+        }
+        if (doc.HasMember("partitions") && doc["partitions"].IsArray()) {
+            for (const auto& partition : doc["partitions"].GetArray()) {
+                Partition p;
+                p.partitionId = partition["partitionId"].GetInt();
+                p.nodeId = partition["nodeId"].GetString();
+                config.partitions.push_back(p);
+            }
+        }
+    }
+
+    return config;
+}
+
+
+void MasterServer::getPartitionConfig(const httplib::Request& req, httplib::Response& res) {
+    auto instanceId = req.get_param_value("instanceId");
+    try {
+        PartitionConfig config = doGetPartitionConfig(instanceId);
+
+        rapidjson::Document doc;
+        doc.SetObject();
+        rapidjson::Document::AllocatorType& allocator = doc.GetAllocator();
+
+        // 添加分区配置信息到响应
+        doc.AddMember("partitionKey", rapidjson::Value(config.partitionKey.c_str(), allocator), allocator);
+        doc.AddMember("numberOfPartitions", config.numberOfPartitions, allocator);
+
+        rapidjson::Value partitionsArray(rapidjson::kArrayType);
+        for (const auto& partition : config.partitions) {
+            rapidjson::Value partitionObj(rapidjson::kObjectType);
+            partitionObj.AddMember("partitionId", partition.partitionId, allocator);
+            partitionObj.AddMember("nodeId", rapidjson::Value(partition.nodeId.c_str(), allocator), allocator);
+            partitionsArray.PushBack(partitionObj, allocator);
+        }
+        doc.AddMember("partitions", partitionsArray, allocator);
+
+        setResponse(res, 0, "Partition config retrieved successfully", &doc);
+    } catch (const std::exception& e) {
+        setResponse(res, 1, "Exception occurred: " + std::string(e.what()));
+    }
+}
+
+
+
+void MasterServer::updatePartitionConfig(const httplib::Request& req, httplib::Response& res) {
+    rapidjson::Document doc;
+    doc.Parse(req.body.c_str());
+    if (!doc.IsObject()) {
+        setResponse(res, 1, "Invalid JSON format");
+        return;
+    }
+
+    try {
+        std::string instanceId = doc["instanceId"].GetString();
+        std::string partitionKey = doc["partitionKey"].GetString();
+        int numberOfPartitions = doc["numberOfPartitions"].GetInt();
+
+        std::list<Partition> partitionList;
+        const rapidjson::Value& partitions = doc["partitions"];
+        for (const auto& partition : partitions.GetArray()) {
+            int partitionId = partition["partitionId"].GetInt();
+            std::string nodeId = partition["nodeId"].GetString();
+            partitionList.push_back({partitionId, nodeId});
+        }
+        doUpdatePartitionConfig(instanceId, partitionKey, numberOfPartitions, partitionList);
+        setResponse(res, 0, "Partition configuration updated successfully");
+    } catch (const std::exception& e) {
+        setResponse(res, 1, std::string("Error updating partition config: ") + e.what());
+    }
+}
 

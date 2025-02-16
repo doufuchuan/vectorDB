@@ -12,3 +12,38 @@ curl "http://localhost:6060/getInstance?instanceId=instance1"
 
 增加node2信息
 curl -X POST "http://localhost:6060/addNode" -H "Content-Type: application/json" -d '{"instanceId": "instance1", "nodeId": "node124", "url": "http://127.0.0.1:9090", "role": 1, "status": 0}'
+
+分片管理
+
+更新分区信息：
+curl -X POST http://localhost:6060/updatePartitionConfig \-H "Content-Type: application/json" \-d '{
+           "instanceId": "instance1",
+           "partitionKey": "id",
+           "numberOfPartitions": 2,
+           "partitions": [
+             {"partitionId": 0, "nodeId": "node123"},
+             {"partitionId": 0, "nodeId": "node124"},
+             {"partitionId": 1, "nodeId": "node125"},
+             {"partitionId": 1, "nodeId": "node126"}
+           ]
+         }'
+
+获取分区信息：
+curl "http://localhost:6060/getPartitionConfig?instanceId=instance1"
+
+
+
+更新分区信息：
+curl -X POST http://localhost:6060/updatePartitionConfig \-H "Content-Type: application/json" \-d '{
+           "instanceId": "instance1",
+           "partitionKey": "id",
+           "numberOfPartitions": 1,
+           "partitions": [
+             {"partitionId": 0, "nodeId": "node123"},
+             {"partitionId": 0, "nodeId": "node124"}
+           ]
+         }'
+
+
+增加一个新节点：
+curl -X POST "http://localhost:6060/addNode" -H "Content-Type: application/json" -d '{"instanceId": "instance1", "nodeId": "node125", "url": "http://127.0.0.1:9090", "role": 1, "status": 0}'
